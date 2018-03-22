@@ -5,9 +5,9 @@ class ANN
 {
     boolean verbose = true;
 
-    int i = 4; // number of input neurons
+    int i = 64; // number of input neurons
     int j = 5; // number of hidden neurons
-    int k = 2; // number of output neurons
+    int k = 10; // number of output neurons
     double[][] weights1 = new double[j][i];
     double[][] weights2 = new double[k][j];
 
@@ -43,10 +43,11 @@ class ANN
         }
     }
 
-    void train(ArrayList<Example> train_x, int max_iterations)
+    void train(ArrayList<Example> train_x, int max_iterations, ArrayList<Example> validation_x)
     {
         int iterations = 0;
         double error = 0;
+        double old_validation_error = Double.POSITIVE_INFINITY;
         while(iterations++ < max_iterations)
         {
             error = 0;
@@ -72,7 +73,14 @@ class ANN
                 this.gradientDescent(weights1, weights2, derivatives_E_Wji, derivatives_E_Wkj);
             }
             error /= train_x.size();
-            System.out.println("[" + iterations + "] Error: " + error);
+
+            double validation_error = getValidationError(validation_x);
+            System.out.println("[" + iterations + "] Train error: " + error);
+            System.out.println("[" + iterations + "] Validation error: " + validation_error);
+            System.out.println();
+            if (validation_error > old_validation_error)
+                break;
+            old_validation_error = validation_error;
         }
         System.out.println("--------------");
         System.out.println("Train error: " + error);
@@ -132,13 +140,13 @@ class ANN
         return delta_j;
     }
 
-    ArrayList<Double> evaluateOutputDeltas(ArrayList<Double> y, ArrayList<Double> target)
+    ArrayList<Double> evaluateOutputDeltas(ArrayList<Double> y, ArrayList<Integer> target)
     {
         ArrayList<Double> delta_k = new ArrayList<Double>();
         for (Double yk: y)
-        for (int i = 0; i < y.size(); i++)
+        for (int k = 0; k < y.size(); k++)
         {
-            delta_k.add(y.get(i) - target.get(i));
+            delta_k.add((y.get(k) - target.get(k)) * delta_sigmoid(list_ak.get(k)));
         }
         return delta_k;
     }
@@ -149,7 +157,7 @@ class ANN
         list_zi = new ArrayList<Double>();
         for(int i = 0; i < this.i; i++)
         {
-            list_zi.add(sigmoid(x.get(i)));
+            list_zi.add(x.get(i));
         }
 
         list_aj = new ArrayList<Double>();
@@ -175,10 +183,28 @@ class ANN
                 ak += weights2[k][j] * list_zj.get(j);
             }
             list_ak.add(ak);
-            list_yk.add(ak); // I(ak)
+            list_yk.add(sigmoid(ak));
         }
 
         return list_yk;
+    }
+
+    double getValidationError(ArrayList<Example> validation_x)
+    {
+        double validation_error = 0;
+        for (Example xi: validation_x)
+        {
+            ArrayList<Double> y = this.feedForward(xi.attributes);
+            double En = 0;
+            for (int k = 0; k < this.k; k++)
+            {
+                En += (0.5)*Math.pow(y.get(k) - xi.target.get(k) ,2);
+            }
+            En /= this.k;
+            validation_error += En;
+        }
+        validation_error /= validation_x.size();
+        return validation_error;
     }
 
     void evaluateModel(ArrayList<Example> test_x)
@@ -203,27 +229,27 @@ class ANN
             test_error += En;
 
             // TODO: Makeshift evaluation
-            if (prediction.get(0) == 0 && xi.target.get(0) == 0)
-                TP++;
-            if (prediction.get(0) == 1 && xi.target.get(0) == 1)
-                TN++;
-            if (prediction.get(0) == 0 && xi.target.get(0) == 1)
-                FN++;
-            if (prediction.get(0) == 1 && xi.target.get(0) == 0)
-                FP++;
+            // if (prediction.get(0) == 0 && xi.target.get(0) == 0)
+            //     TP++;
+            // if (prediction.get(0) == 1 && xi.target.get(0) == 1)
+            //     TN++;
+            // if (prediction.get(0) == 0 && xi.target.get(0) == 1)
+            //     FN++;
+            // if (prediction.get(0) == 1 && xi.target.get(0) == 0)
+            //     FP++;
 
         }
         test_error /= test_x.size();
         System.out.println("Test error: " + test_error);
 
-        /* Print confusion matrix */
-        uObj.computeConfusionMatrix(TP, FP, TN, FN);
-
-        /* Compute precision */
-        uObj.computePrecision(TP, FP, TN, FN);
-
-        /* Compute recall */
-        uObj.computeRecall(TP, FP, TN, FN);
+        // /* Print confusion matrix */
+        // uObj.computeConfusionMatrix(TP, FP, TN, FN);
+        //
+        // /* Compute precision */
+        // uObj.computePrecision(TP, FP, TN, FN);
+        //
+        // /* Compute recall */
+        // uObj.computeRecall(TP, FP, TN, FN);
     }
 
     static double delta_sigmoid(double x)
@@ -243,14 +269,16 @@ class ANN
 
         String train_data = "";
         String test_data = "";
+        String validation_data = "";
 
         try {
             train_data = args[0];
             test_data = args[1];
+            validation_data = args[2];
 
             String options;
             try {
-                options = args[2];
+                options = args[3];
                 if (options.equals("-v") || options.equals("--verbose"))
                     ann.verbose = true;
                 if (options.equals("-h") || options.equals("--help"))
@@ -265,20 +293,22 @@ class ANN
         }
 
         ArrayList<Example> x = new ArrayList<Example>(); // x matrix. Each data point is of type Example
-        ArrayList<Example> x_test = new ArrayList<Example>(); // Test data points
+        ArrayList<Example> test_x = new ArrayList<Example>(); // Test data points
+        ArrayList<Example> validation_x = new ArrayList<Example>();
 
 
         try {
             x = uObj.readInputCSV(train_data);
-            x_test = uObj.readInputCSV(test_data);
+            test_x = uObj.readInputCSV(test_data);
+            validation_x = uObj.readInputCSV(validation_data);
         }
         catch(Exception e) {
             System.out.println("File not found!");
             System.exit(0);
         }
 
-        ann.train(x, 100); // training data: x, max_iterations: 100
-        ann.evaluateModel(x_test);
+        ann.train(x, 10000, validation_x); // training data: x, max_iterations: 100
+        ann.evaluateModel(test_x);
 
     }
 }
