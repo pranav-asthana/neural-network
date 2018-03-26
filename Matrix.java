@@ -3,16 +3,16 @@ import java.util.*;
 class Matrix
 {
 
-    float[][] matrix;
+    double[][] matrix;
 
-    public Matrix(float[][] matrix)
+    public Matrix(double[][] matrix)
     {
         this.matrix = matrix;
     }
 
-    public Matrix(ArrayList<Float> vector)
+    public Matrix(ArrayList<Double> vector)
     {
-        this.matrix = new float[vector.size()][1];
+        this.matrix = new double[vector.size()][1];
         for (int i = 0; i < vector.size(); i++)
         {
             this.matrix[i][0] = vector.get(i);
@@ -23,8 +23,8 @@ class Matrix
     Matrix evaluateInverse()
     {
         int n = this.matrix.length;
-        float d = this.determinant(n);
-        
+        double d = this.determinant(n);
+
         if (d == 0)
         {
             System.out.println("\nInverse of Entered Matrix is not possible\n");
@@ -47,10 +47,10 @@ class Matrix
     }
 
     /* Calculate the determinant */
-    float determinant(int size)
+    double determinant(int size)
     {
-        float s = 1, det = 0;
-        float[][] b = new float[size][size];
+        double s = 1, det = 0;
+        double[][] b = new double[size][size];
         int i, j, m, n, c;
         if (size == 1)
             return (this.matrix[0][0]);
@@ -93,8 +93,8 @@ class Matrix
     Matrix cofactor()
     {
         int f = this.matrix.length;
-        float[][] b = new float[f][f];
-        float[][] fac = new float[f][f];
+        double[][] b = new double[f][f];
+        double[][] fac = new double[f][f];
         int p, q, m, n, i, j;
         for (q = 0;q < f; q++)
         {
@@ -109,7 +109,7 @@ class Matrix
                         if (i != q && j != p)
                         {
                             b[m][n] = this.matrix[i][j];
-                        
+
                             if (n < (f - 2))
                                 n++;
                             else
@@ -121,7 +121,7 @@ class Matrix
                     }
                 }
                 Matrix B = new Matrix(b);
-                fac[q][p] = (float)Math.pow(-1, q + p) * B.determinant(b.length-1);
+                fac[q][p] = (double)Math.pow(-1, q + p) * B.determinant(b.length-1);
             }
         }
 
@@ -132,7 +132,7 @@ class Matrix
     Matrix transpose()
     {
         int i, j;
-        float[][] b = new float[this.matrix[0].length][this.matrix.length];
+        double[][] b = new double[this.matrix[0].length][this.matrix.length];
 
         for (i = 0;i < this.matrix.length; i++)
         {
@@ -145,7 +145,7 @@ class Matrix
         return new Matrix(b);
     }
 
-    Matrix scalar_multiply(float scalar)
+    Matrix scalar_multiply(double scalar)
     {
         for (int i = 0; i < this.matrix.length; i++)
         {
@@ -165,9 +165,9 @@ class Matrix
 
         // System.out.println(m +" " +p +" " + q);
 
-        float[][] result = new float[m][q];
+        double[][] result = new double[m][q];
 
-        float sum = 0;
+        double sum = 0;
         for (int c = 0 ; c < m ; c++ )
          {
             for (int d = 0 ; d < q ; d++ )
@@ -183,6 +183,21 @@ class Matrix
          }
 
          return new Matrix(result);
+    }
+
+    Matrix add(Matrix A)
+    {
+        int m = this.matrix.length;
+        int n = this.matrix[0].length;
+
+        for (int i = 0; i < m; i++)
+        {
+            for (int j = 0; j < n; j++)
+            {
+                this.matrix[i][j] += A.matrix[i][j];
+            }
+        }
+        return this;
     }
 
     void printMatrix()

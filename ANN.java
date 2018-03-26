@@ -43,7 +43,7 @@ class ANN
         }
     }
 
-    void train(ArrayList<Example> train_x, int max_iterations, ArrayList<Example> validation_x)
+    void train(ArrayList<Example> train_x, int batch_size, int max_iterations, ArrayList<Example> validation_x)
     {
         int iterations = 0;
         double error = 0;
@@ -51,39 +51,58 @@ class ANN
         while(iterations++ < max_iterations)
         {
             error = 0;
-            // Here we're doing sample by sample gradient descent (not mini-batch)
-            for (Example xi: train_x)
+            ArrayList<ArrayList<Example>> batches = generateBatches(train_x, batch_size);
+            for (ArrayList<Example> batch: batches)
             {
-                ArrayList<Double> y = this.feedForward(xi.attributes); // y.size() = k
-
-                double error_n = 0;
-                for (int k = 0; k < this.k; k++)
+                Matrix sum_derivatives_E_Wji = new Matrix(new double[j][i]);
+                Matrix sum_derivatives_E_Wkj = new Matrix(new double[k][j]);
+                for (Example xi: batch)
                 {
-                    error_n += (0.5)*Math.pow(y.get(k) - xi.target.get(k) ,2);
+                    ArrayList<Double> y = this.feedForward(xi.attributes); // y.size() = k
+
+                    double error_n = 0;
+                    for (int k = 0; k < this.k; k++)
+                    {
+                        error_n += (0.5)*Math.pow(y.get(k) - xi.target.get(k) ,2);
+                    }
+                    error_n /= this.k;
+                    error += error_n;
+
+                    delta_k = this.evaluateOutputDeltas(y, xi.target);
+
+                    delta_j = this.backprop(this.list_aj, this.weights2, delta_k);
+
+                    this.evaluateDerivatives(); // 2 matrices of derivatives
+                    sum_derivatives_E_Wji.add(new Matrix(derivatives_E_Wji));
+                    sum_derivatives_E_Wkj.add(new Matrix(derivatives_E_Wkj));
                 }
-                error_n /= this.k;
-                error += error_n;
-
-                delta_k = this.evaluateOutputDeltas(y, xi.target);
-
-                delta_j = this.backprop(this.list_aj, this.weights2, delta_k);
-
-                this.evaluateDerivatives(); // 2 matrices of derivatives
-
-                this.gradientDescent(weights1, weights2, derivatives_E_Wji, derivatives_E_Wkj);
+                this.gradientDescent(weights1, weights2, sum_derivatives_E_Wji.matrix, sum_derivatives_E_Wkj.matrix);
             }
             error /= train_x.size();
 
             double validation_error = getValidationError(validation_x);
-            System.out.println("[" + iterations + "] Train error: " + error);
-            System.out.println("[" + iterations + "] Validation error: " + validation_error);
-            System.out.println();
+            System.out.printf("[" + iterations + "] Train error: %.10f", error);
+            System.out.printf(" Validation error: %.10f\n", validation_error);
             if (validation_error > old_validation_error)
                 break;
             old_validation_error = validation_error;
         }
         System.out.println("--------------");
-        System.out.println("Train error: " + error);
+        System.out.println("[" + iterations + "] Train error: " + error);
+    }
+
+    ArrayList<ArrayList<Example>> generateBatches(ArrayList<Example> train_x, int batch_size)
+    {
+        ArrayList<ArrayList<Example>> batches = new ArrayList<ArrayList<Example>>();
+        Collections.shuffle(train_x);
+        for (int i = 0; i < train_x.size(); i += batch_size)
+        {
+            if (i+batch_size < train_x.size())
+                batches.add(new ArrayList(train_x.subList(i, i+batch_size)));
+            else
+                batches.add(new ArrayList(train_x.subList(i, train_x.size())));
+        }
+        return batches;
     }
 
     // Perform gradient descent on weight matrix w by iterating over samples in x with learning rate eta
@@ -307,7 +326,7 @@ class ANN
             System.exit(0);
         }
 
-        ann.train(x, 10000, validation_x); // training data: x, max_iterations: 100
+        ann.train(x, 1, 10000, validation_x);
         ann.evaluateModel(test_x);
 
     }
