@@ -11,6 +11,9 @@ class ANN
     double[][] weights1 = new double[j][i];
     double[][] weights2 = new double[k][j];
 
+    double[][] velocity1 = new double[j][i];
+    double[][] velocity2 = new double[k][j];
+
     ArrayList<Double> delta_j;
     ArrayList<Double> delta_k;
 
@@ -32,6 +35,7 @@ class ANN
             for (int i = 0; i < this.i; i++)
             {
                 weights1[j][i] = r.nextGaussian();
+                velocity1[j][i] = 0;
             }
         }
         for (int k = 0; k < this.k; k++)
@@ -39,6 +43,7 @@ class ANN
             for (int j = 0; j < this.j; j++)
             {
                 weights2[k][j] = r.nextGaussian();
+                velocity2[k][j] = 0;
             }
         }
     }
@@ -76,7 +81,7 @@ class ANN
                     sum_derivatives_E_Wji.add(new Matrix(derivatives_E_Wji));
                     sum_derivatives_E_Wkj.add(new Matrix(derivatives_E_Wkj));
                 }
-                this.gradientDescent(weights1, weights2, sum_derivatives_E_Wji.matrix, sum_derivatives_E_Wkj.matrix);
+                this.gradientDescent(weights1, weights2, velocity1, velocity2, sum_derivatives_E_Wji.matrix, sum_derivatives_E_Wkj.matrix);
             }
             error /= train_x.size();
 
@@ -107,18 +112,33 @@ class ANN
 
     // Perform gradient descent on weight matrix w by iterating over samples in x with learning rate eta
     // Iterate until error < epsilon or number of iterations > max_iterations
-    void gradientDescent(double[][] weights1, double[][] weights2, double[][] D_Wji, double[][] D_Wkj)
+    void gradientDescent(double[][] weights1, double[][] weights2, double[][] velocity1, double[][] velocity2, double[][] D_Wji, double[][] D_Wkj)
     {
         // Hyper-parameters
         double eta = 0.01;
+        double beta = 0.9;
 
         for (int k = 0; k < this.k; k++)
-        for (int j = 0; j < this.j; j++)
-        weights2[k][j] -= eta * D_Wkj[k][j];
+        {
+            for (int j = 0; j < this.j; j++)
+            {
+                velocity2[k][j] = beta*velocity2[k][j] + (1-beta)*D_Wkj[k][j];
+                weights2[k][j] -= eta * velocity2[k][j];
+
+                // weights2[k][j] -= eta * D_Wkj[k][j];
+            }
+        }
 
         for (int j = 0; j < this.j; j++)
-        for (int i = 0; i < this.i; i++)
-        weights1[j][i] -= eta * D_Wji[j][i];
+        {
+            for (int i = 0; i < this.i; i++)
+            {
+                velocity1[j][i] = beta*velocity1[j][i] + (1-beta)*D_Wji[j][i];
+                weights1[j][i] -= eta * velocity1[j][i];
+
+                // weights1[j][i] -= eta * D_Wji[j][i];
+            }
+        }
 
     }
 
