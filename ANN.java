@@ -6,7 +6,7 @@ class ANN
     boolean verbose = true;
 
     int i = 64; // number of input neurons
-    int j = 5; // number of hidden neurons
+    int j = 10; // number of hidden neurons
     int k = 10; // number of output neurons
     double[][] weights1 = new double[j][i+1];
     double[][] weights2 = new double[k][j+1];
@@ -25,6 +25,8 @@ class ANN
 
     double[][] derivatives_E_Wji = new double[j][i+1];
     double[][] derivatives_E_Wkj = new double[k][j+1];
+
+    boolean crossEntropy = false; // false -> sse
 
     ANN()
     {
@@ -53,7 +55,6 @@ class ANN
         int iterations = 0;
         double error = 0;
         double old_validation_error = Double.POSITIVE_INFINITY;
-        int spike = 0;
         while(iterations++ < max_iterations)
         {
             error = 0;
@@ -69,8 +70,10 @@ class ANN
                     double error_n = 0;
                     for (int k = 0; k < this.k; k++)
                     {
-                        // error_n += (0.5)*Math.pow(y.get(k) - xi.target.get(k) ,2);
-                        error_n += -(xi.target.get(k) * Math.log(y.get(k)));
+                        if (crossEntropy)
+                            error_n += -(xi.target.get(k) * Math.log(y.get(k)));
+                        else
+                            error_n += (0.5)*Math.pow(y.get(k) - xi.target.get(k) ,2);
                     }
                     error_n /= this.k;
                     error += error_n;
@@ -90,18 +93,6 @@ class ANN
             double validation_error = getValidationError(validation_x);
             System.out.printf("[" + iterations + "] Train error: %.10f", error);
             System.out.printf(" Validation error: %.10f\n", validation_error);
-            // if (validation_error > old_validation_error)
-            // {
-            //     if (validation_error - old_validation_error > 0.01)
-            //     {
-            //         spike++;
-            //         System.out.println("spike:"+spike);
-            //         if (spike == 20)
-            //             break;
-            //     }
-            // }
-            // else
-            //     old_validation_error = validation_error;
             if (validation_error - old_validation_error > 0)
                 break;
             old_validation_error = validation_error;
@@ -202,8 +193,10 @@ class ANN
         for (Double yk: y)
         for (int k = 0; k < y.size(); k++)
         {
-            // delta_k.add((y.get(k) - target.get(k)) * delta_sigmoid(list_ak.get(k)));
-            delta_k.add(-(target.get(k)/y.get(k))*delta_sigmoid(list_ak.get(k)));
+            if (crossEntropy)
+                delta_k.add(-(target.get(k)/y.get(k))*delta_sigmoid(list_ak.get(k)));
+            else
+                delta_k.add((y.get(k) - target.get(k)) * delta_sigmoid(list_ak.get(k)));
         }
         return delta_k;
     }
@@ -257,8 +250,10 @@ class ANN
             double En = 0;
             for (int k = 0; k < this.k; k++)
             {
-                // En += (0.5)*Math.pow(y.get(k) - xi.target.get(k) ,2);
-                En += -(xi.target.get(k) * Math.log(y.get(k)));
+                if (crossEntropy)
+                    En += -(xi.target.get(k) * Math.log(y.get(k)));
+                else
+                    En += (0.5)*Math.pow(y.get(k) - xi.target.get(k) ,2);
             }
             En /= this.k;
             validation_error += En;
@@ -284,8 +279,10 @@ class ANN
             double max_prob = 0;
             for (int k = 0; k < this.k; k++)
             {
-                // En += (0.5)*Math.pow(y.get(k) - xi.target.get(k) ,2);
-                En += -(xi.target.get(k) * Math.log(y.get(k)));
+                if (crossEntropy)
+                    En += -(xi.target.get(k) * Math.log(y.get(k)));
+                else
+                    En += (0.5)*Math.pow(y.get(k) - xi.target.get(k) ,2);
                 if (y.get(k) > max_prob)
                 {
                     p = k;
@@ -383,7 +380,7 @@ class ANN
             System.exit(0);
         }
 
-        ann.train(x, 1, 10000, validation_x);
+        ann.train(x, 100, 100, validation_x);
         ann.evaluateModel(test_x);
 
     }
