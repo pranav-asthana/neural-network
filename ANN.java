@@ -8,11 +8,11 @@ class ANN
     int i = 64; // number of input neurons
     int j = 5; // number of hidden neurons
     int k = 10; // number of output neurons
-    double[][] weights1 = new double[j][i];
-    double[][] weights2 = new double[k][j];
+    double[][] weights1 = new double[j][i+1];
+    double[][] weights2 = new double[k][j+1];
 
-    double[][] velocity1 = new double[j][i];
-    double[][] velocity2 = new double[k][j];
+    double[][] velocity1 = new double[j][i+1];
+    double[][] velocity2 = new double[k][j+1];
 
     ArrayList<Double> delta_j;
     ArrayList<Double> delta_k;
@@ -23,8 +23,8 @@ class ANN
     ArrayList<Double> list_ak;
     ArrayList<Double> list_yk;
 
-    double[][] derivatives_E_Wji = new double[j][i];
-    double[][] derivatives_E_Wkj = new double[k][j];
+    double[][] derivatives_E_Wji = new double[j][i+1];
+    double[][] derivatives_E_Wkj = new double[k][j+1];
 
     ANN()
     {
@@ -32,7 +32,7 @@ class ANN
         Random r = new Random();
         for (int j = 0; j < this.j; j++)
         {
-            for (int i = 0; i < this.i; i++)
+            for (int i = 0; i <= this.i; i++)
             {
                 weights1[j][i] = r.nextGaussian();
                 velocity1[j][i] = 0;
@@ -40,7 +40,7 @@ class ANN
         }
         for (int k = 0; k < this.k; k++)
         {
-            for (int j = 0; j < this.j; j++)
+            for (int j = 0; j <= this.j; j++)
             {
                 weights2[k][j] = r.nextGaussian();
                 velocity2[k][j] = 0;
@@ -53,14 +53,15 @@ class ANN
         int iterations = 0;
         double error = 0;
         double old_validation_error = Double.POSITIVE_INFINITY;
+        int spike = 0;
         while(iterations++ < max_iterations)
         {
             error = 0;
             ArrayList<ArrayList<Example>> batches = generateBatches(train_x, batch_size);
             for (ArrayList<Example> batch: batches)
             {
-                Matrix sum_derivatives_E_Wji = new Matrix(new double[j][i]);
-                Matrix sum_derivatives_E_Wkj = new Matrix(new double[k][j]);
+                Matrix sum_derivatives_E_Wji = new Matrix(new double[j][i+1]);
+                Matrix sum_derivatives_E_Wkj = new Matrix(new double[k][j+1]);
                 for (Example xi: batch)
                 {
                     ArrayList<Double> y = this.feedForward(xi.attributes); // y.size() = k
@@ -68,7 +69,8 @@ class ANN
                     double error_n = 0;
                     for (int k = 0; k < this.k; k++)
                     {
-                        error_n += (0.5)*Math.pow(y.get(k) - xi.target.get(k) ,2);
+                        // error_n += (0.5)*Math.pow(y.get(k) - xi.target.get(k) ,2);
+                        error_n += -(xi.target.get(k) * Math.log(y.get(k)));
                     }
                     error_n /= this.k;
                     error += error_n;
@@ -88,7 +90,19 @@ class ANN
             double validation_error = getValidationError(validation_x);
             System.out.printf("[" + iterations + "] Train error: %.10f", error);
             System.out.printf(" Validation error: %.10f\n", validation_error);
-            if (validation_error > old_validation_error)
+            // if (validation_error > old_validation_error)
+            // {
+            //     if (validation_error - old_validation_error > 0.01)
+            //     {
+            //         spike++;
+            //         System.out.println("spike:"+spike);
+            //         if (spike == 20)
+            //             break;
+            //     }
+            // }
+            // else
+            //     old_validation_error = validation_error;
+            if (validation_error - old_validation_error > 0)
                 break;
             old_validation_error = validation_error;
         }
@@ -120,7 +134,7 @@ class ANN
 
         for (int k = 0; k < this.k; k++)
         {
-            for (int j = 0; j < this.j; j++)
+            for (int j = 0; j <= this.j; j++)
             {
                 velocity2[k][j] = beta*velocity2[k][j] + (1-beta)*D_Wkj[k][j];
                 weights2[k][j] -= eta * velocity2[k][j];
@@ -131,7 +145,7 @@ class ANN
 
         for (int j = 0; j < this.j; j++)
         {
-            for (int i = 0; i < this.i; i++)
+            for (int i = 0; i <= this.i; i++)
             {
                 velocity1[j][i] = beta*velocity1[j][i] + (1-beta)*D_Wji[j][i];
                 weights1[j][i] -= eta * velocity1[j][i];
@@ -146,7 +160,7 @@ class ANN
     {
         for (int j = 0; j < this.j; j++)
         {
-            for (int i = 0; i < this.i; i++)
+            for (int i = 0; i <= this.i; i++)
             {
                 derivatives_E_Wji[j][i] = delta_j.get(j) * list_zi.get(i);
             }
@@ -154,7 +168,7 @@ class ANN
 
         for (int k = 0; k < this.k; k++)
         {
-            for (int j = 0; j < this.j; j++)
+            for (int j = 0; j <= this.j; j++)
             {
                 derivatives_E_Wkj[k][j] = delta_k.get(k) * list_zj.get(j);
             }
@@ -166,14 +180,17 @@ class ANN
         ArrayList<Double> delta_j = new ArrayList<Double>();
 
         // Implementation here
-        for (int j = 0; j < this.j; j++)
+        for (int j = 0; j <= this.j; j++)
         {
             double sum = 0;
             for (int k = 0; k < this.k; k++)
             {
                 sum += weights_kj[k][j] * delta_k.get(k);
             }
-            delta_j.add(sum * delta_sigmoid(list_aj.get(j)));
+            if (j == this.j)
+                delta_j.add(0.0d);
+            else
+                delta_j.add(sum * delta_sigmoid(list_aj.get(j)));
         }
 
         return delta_j;
@@ -185,7 +202,8 @@ class ANN
         for (Double yk: y)
         for (int k = 0; k < y.size(); k++)
         {
-            delta_k.add((y.get(k) - target.get(k)) * delta_sigmoid(list_ak.get(k)));
+            // delta_k.add((y.get(k) - target.get(k)) * delta_sigmoid(list_ak.get(k)));
+            delta_k.add(-(target.get(k)/y.get(k))*delta_sigmoid(list_ak.get(k)));
         }
         return delta_k;
     }
@@ -194,6 +212,7 @@ class ANN
     ArrayList<Double> feedForward(ArrayList<Double> x)
     {
         list_zi = new ArrayList<Double>();
+        list_zi.add(1.0d); // x(0) = 1, for bias. b = Wj0
         for(int i = 0; i < this.i; i++)
         {
             list_zi.add(x.get(i));
@@ -201,10 +220,11 @@ class ANN
 
         list_aj = new ArrayList<Double>();
         list_zj = new ArrayList<Double>();
+        list_zj.add(1.0d); // for bias to next layer; Wk0
         for (int j = 0; j < this.j; j++)
         {
             double aj = 0;
-            for (int i = 0; i < this.i; i++)
+            for (int i = 0; i <= this.i; i++)
             {
                 aj += weights1[j][i] * list_zi.get(i);
             }
@@ -217,7 +237,7 @@ class ANN
         for (int k = 0; k < this.k; k++)
         {
             double ak = 0;
-            for (int j = 0; j < this.j; j++)
+            for (int j = 0; j <= this.j; j++)
             {
                 ak += weights2[k][j] * list_zj.get(j);
             }
@@ -237,7 +257,8 @@ class ANN
             double En = 0;
             for (int k = 0; k < this.k; k++)
             {
-                En += (0.5)*Math.pow(y.get(k) - xi.target.get(k) ,2);
+                // En += (0.5)*Math.pow(y.get(k) - xi.target.get(k) ,2);
+                En += -(xi.target.get(k) * Math.log(y.get(k)));
             }
             En /= this.k;
             validation_error += En;
@@ -250,7 +271,8 @@ class ANN
     {
         Utility uObj = new Utility(); // Utility object
 
-        int FP = 0, FN = 0, TP = 0, TN = 0; // Initialize variables
+        // int FP = 0, FN = 0, TP = 0, TN = 0; // Initialize variables
+        int correct = 0, incorrect = 0;
         double test_error = 0;
 
         for (Example xi: test_x)
@@ -258,16 +280,29 @@ class ANN
             ArrayList<Double> y = this.feedForward(xi.attributes);
             ArrayList<Integer> prediction = new ArrayList<Integer>();
             double En = 0;
+            int p = -1;
+            double max_prob = 0;
             for (int k = 0; k < this.k; k++)
             {
-                En += (0.5)*Math.pow(y.get(k) - xi.target.get(k) ,2);
-                int p = (int) Math.round(y.get(k));
-                prediction.add(p);
+                // En += (0.5)*Math.pow(y.get(k) - xi.target.get(k) ,2);
+                En += -(xi.target.get(k) * Math.log(y.get(k)));
+                if (y.get(k) > max_prob)
+                {
+                    p = k;
+                    max_prob = y.get(k);
+                }
+                // int p = (int) Math.round(y.get(k));
+                // prediction.add(p);
             }
+            // System.out.println(p);
             En /= this.k;
             test_error += En;
 
             // TODO: Makeshift evaluation
+            if (p == xi.number)
+                correct++;
+            else
+                incorrect++;
             // if (prediction.get(0) == 0 && xi.target.get(0) == 0)
             //     TP++;
             // if (prediction.get(0) == 1 && xi.target.get(0) == 1)
@@ -280,6 +315,8 @@ class ANN
         }
         test_error /= test_x.size();
         System.out.println("Test error: " + test_error);
+        System.out.println("Correct: " + correct);
+        System.out.println("Incorrect: " + incorrect);
 
         // /* Print confusion matrix */
         // uObj.computeConfusionMatrix(TP, FP, TN, FN);
