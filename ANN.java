@@ -181,7 +181,12 @@ class ANN
             if (j == this.j)
                 delta_j.add(0.0d);
             else
-                delta_j.add(sum * delta_sigmoid(list_aj.get(j)));
+            {
+                if (crossEntropy)
+                    delta_j.add(sum);
+                else
+                    delta_j.add(sum * delta_sigmoid(list_aj.get(j)));
+            }
         }
 
         return delta_j;
@@ -194,7 +199,7 @@ class ANN
         for (int k = 0; k < y.size(); k++)
         {
             if (crossEntropy)
-                delta_k.add(-(target.get(k)/y.get(k))*delta_sigmoid(list_ak.get(k)));
+                delta_k.add(-(target.get(k)/y.get(k)));
             else
                 delta_k.add((y.get(k) - target.get(k)) * delta_sigmoid(list_ak.get(k)));
         }
