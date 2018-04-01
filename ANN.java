@@ -26,7 +26,7 @@ class ANN
     double[][] derivatives_E_Wji = new double[j][i+1];
     double[][] derivatives_E_Wkj = new double[k][j+1];
 
-    boolean crossEntropy = false; // false -> sse
+    boolean crossEntropy = true; // false -> sse
 
     ANN()
     {
@@ -227,6 +227,7 @@ class ANN
 
         list_ak = new ArrayList<Double>();
         list_yk = new ArrayList<Double>();
+        double softmax_denominator = 0;
         for (int k = 0; k < this.k; k++)
         {
             double ak = 0;
@@ -235,7 +236,20 @@ class ANN
                 ak += weights2[k][j] * list_zj.get(j);
             }
             list_ak.add(ak);
-            list_yk.add(sigmoid(ak));
+            if (crossEntropy)
+            {
+                list_yk.add(Math.exp(ak));
+                softmax_denominator += Math.exp(ak);
+            }
+            else
+                list_yk.add(sigmoid(ak));
+        }
+        if (crossEntropy)
+        {
+            for (int index = 0; index < list_yk.size(); index++)
+            {
+                list_yk.set(index, list_yk.get(index)/softmax_denominator);
+            }
         }
 
         return list_yk;
