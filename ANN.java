@@ -93,8 +93,8 @@ class ANN
             double validation_error = getValidationError(validation_x);
             System.out.printf("[" + iterations + "] Train error: %.10f", error);
             System.out.printf(" Validation error: %.10f\n", validation_error);
-            if (validation_error - old_validation_error > 0)
-                break;
+            // if (validation_error - old_validation_error > 0)
+            //     break;
             old_validation_error = validation_error;
         }
         System.out.println("--------------");
@@ -181,12 +181,7 @@ class ANN
             if (j == this.j)
                 delta_j.add(0.0d);
             else
-            {
-                if (crossEntropy)
-                    delta_j.add(sum);
-                else
-                    delta_j.add(sum * delta_sigmoid(list_aj.get(j)));
-            }
+                delta_j.add(sum * delta_sigmoid(list_aj.get(j)));
         }
 
         return delta_j;
@@ -195,11 +190,12 @@ class ANN
     ArrayList<Double> evaluateOutputDeltas(ArrayList<Double> y, ArrayList<Integer> target)
     {
         ArrayList<Double> delta_k = new ArrayList<Double>();
-        for (Double yk: y)
         for (int k = 0; k < y.size(); k++)
         {
             if (crossEntropy)
-                delta_k.add(-(target.get(k)/y.get(k)));
+            {
+                delta_k.add(-(target.get(k)/y.get(k)) * y.get(k)*(1-y.get(k))); // *delta_softmax = softmax*(1-softmax)
+            }
             else
                 delta_k.add((y.get(k) - target.get(k)) * delta_sigmoid(list_ak.get(k)));
         }
@@ -233,6 +229,7 @@ class ANN
         list_ak = new ArrayList<Double>();
         list_yk = new ArrayList<Double>();
         double softmax_denominator = 0;
+        double C = 100; // To stabilize softmax
         for (int k = 0; k < this.k; k++)
         {
             double ak = 0;
@@ -243,8 +240,8 @@ class ANN
             list_ak.add(ak);
             if (crossEntropy)
             {
-                list_yk.add(Math.exp(ak));
-                softmax_denominator += Math.exp(ak);
+                list_yk.add(Math.exp(ak + Math.log(C)));
+                softmax_denominator += Math.exp(ak + Math.log(C));
             }
             else
                 list_yk.add(sigmoid(ak));
