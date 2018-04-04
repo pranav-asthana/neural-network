@@ -22,4 +22,12 @@ class Example
         for (int j = t + 1; j < 10; j++)
             target.add(0);
 	}
+
+    /* Print function */
+    void printExample()
+    {
+        for(double i : attributes)
+            System.out.print(i+" ");
+        System.out.println("-> "+number);
+    }
 }

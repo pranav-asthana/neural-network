@@ -16,10 +16,12 @@ class Utility
 			String line = sc.nextLine();
 			String[] values = line.split(",");
 			ArrayList<Double> a = new ArrayList<Double>();
-			for(int i = 0; i < 64; i++)
+			for(int i = 0; i < 64; i++) 
+			{
 				a.add(Double.parseDouble(values[i]));
-			int t = Integer.parseInt(values[64]);
-
+			}	
+			int t = Integer.parseInt(values[64]); 
+			
 			Example temp = new Example(a, t);
 
 			data.add(temp);
