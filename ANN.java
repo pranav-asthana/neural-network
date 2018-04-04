@@ -93,8 +93,8 @@ class ANN
             double validation_error = getValidationError(validation_x);
             System.out.printf("[" + iterations + "] Train error: %.10f", error);
             System.out.printf(" Validation error: %.10f\n", validation_error);
-            // if (validation_error - old_validation_error > 0)
-            //     break;
+            if (validation_error - old_validation_error > 0)
+                break;
             old_validation_error = validation_error;
         }
         System.out.println("--------------");
@@ -194,7 +194,8 @@ class ANN
         {
             if (crossEntropy)
             {
-                delta_k.add(-(target.get(k)/y.get(k)) * y.get(k)*(1-y.get(k))); // *delta_softmax = softmax*(1-softmax)
+                // delta_k.add(-target.get(k) * (1-y.get(k))); // *delta_softmax = softmax*(1-softmax)
+                delta_k.add((y.get(k) - target.get(k)));
             }
             else
                 delta_k.add((y.get(k) - target.get(k)) * delta_sigmoid(list_ak.get(k)));
@@ -396,7 +397,7 @@ class ANN
             System.exit(0);
         }
 
-        ann.train(x, 100, 100, validation_x);
+        ann.train(x, 100, 3000, validation_x);
         ann.evaluateModel(test_x);
 
     }
