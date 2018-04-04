@@ -3,16 +3,19 @@ import java.io.File;
 
 class ANN
 {
-    boolean verbose = true;
+    boolean verbose = false;
 
     int i = 64; // number of input neurons
-    int j = 10; // number of hidden neurons
+    int j; // number of hidden neurons
     int k = 10; // number of output neurons
     double[][] weights1 = new double[j][i+1];
     double[][] weights2 = new double[k][j+1];
 
-    double[][] velocity1 = new double[j][i+1];
-    double[][] velocity2 = new double[k][j+1];
+    double[][] M1 = new double[j][i+1];
+    double[][] M2 = new double[k][j+1];
+
+    double[][] R1 = new double[j][i+1];
+    double[][] R2 = new double[k][j+1];
 
     ArrayList<Double> delta_j;
     ArrayList<Double> delta_k;
@@ -28,8 +31,23 @@ class ANN
 
     boolean crossEntropy = true; // false -> sse
 
-    ANN()
+    ANN(int hidden, boolean verbose)
     {
+        j = hidden;
+        this.verbose = verbose;
+
+        weights1 = new double[j][i+1];
+        weights2 = new double[k][j+1];
+
+        M1 = new double[j][i+1];
+        M2 = new double[k][j+1];
+
+        R1 = new double[j][i+1];
+        R2 = new double[k][j+1];
+
+        derivatives_E_Wji = new double[j][i+1];
+        derivatives_E_Wkj = new double[k][j+1];
+
         // Initialize weight matrices based on Gaussian distribution
         Random r = new Random();
         for (int j = 0; j < this.j; j++)
@@ -37,7 +55,8 @@ class ANN
             for (int i = 0; i <= this.i; i++)
             {
                 weights1[j][i] = r.nextGaussian();
-                velocity1[j][i] = 0;
+                M1[j][i] = 0;
+                R1[j][i] = 0;
             }
         }
         for (int k = 0; k < this.k; k++)
@@ -45,16 +64,18 @@ class ANN
             for (int j = 0; j <= this.j; j++)
             {
                 weights2[k][j] = r.nextGaussian();
-                velocity2[k][j] = 0;
+                M2[k][j] = 0;
+                R2[k][j] = 0;
             }
         }
     }
 
-    void train(ArrayList<Example> train_x, int batch_size, int max_iterations, ArrayList<Example> validation_x)
+    int train(ArrayList<Example> train_x, int batch_size, int max_iterations, ArrayList<Example> validation_x)
     {
         int iterations = 0;
         double error = 0;
         double old_validation_error = Double.POSITIVE_INFINITY;
+        int spike = 0;
         while(iterations++ < max_iterations)
         {
             error = 0;
@@ -86,19 +107,28 @@ class ANN
                     sum_derivatives_E_Wji.add(new Matrix(derivatives_E_Wji));
                     sum_derivatives_E_Wkj.add(new Matrix(derivatives_E_Wkj));
                 }
-                this.gradientDescent(weights1, weights2, velocity1, velocity2, sum_derivatives_E_Wji.matrix, sum_derivatives_E_Wkj.matrix);
+                this.gradientDescent(weights1, weights2, M1, M2, sum_derivatives_E_Wji.matrix, sum_derivatives_E_Wkj.matrix, iterations);
             }
             error /= train_x.size();
 
             double validation_error = getValidationError(validation_x);
-            System.out.printf("[" + iterations + "] Train error: %.10f", error);
-            System.out.printf(" Validation error: %.10f\n", validation_error);
-            if (validation_error - old_validation_error > 0)
+            if (verbose)
+            {
+                System.out.printf("[" + iterations + "] Train error: %.10f", error);
+                System.out.printf(" Validation error: %.10f\n", validation_error);
+            }
+            if ((validation_error - old_validation_error) > 0.01*old_validation_error)
+                spike++;
+            if (spike == 5) // Stop training when validation_error increases 5th time
                 break;
             old_validation_error = validation_error;
         }
-        System.out.println("--------------");
-        System.out.println("[" + iterations + "] Train error: " + error);
+        if (verbose)
+        {
+            System.out.println("--------------");
+            System.out.println("[" + iterations + "] Train error: " + error);
+        }
+        return iterations;
     }
 
     ArrayList<ArrayList<Example>> generateBatches(ArrayList<Example> train_x, int batch_size)
@@ -117,18 +147,23 @@ class ANN
 
     // Perform gradient descent on weight matrix w by iterating over samples in x with learning rate eta
     // Iterate until error < epsilon or number of iterations > max_iterations
-    void gradientDescent(double[][] weights1, double[][] weights2, double[][] velocity1, double[][] velocity2, double[][] D_Wji, double[][] D_Wkj)
+    void gradientDescent(double[][] weights1, double[][] weights2, double[][] M1, double[][] M2, double[][] D_Wji, double[][] D_Wkj, int iteration)
     {
         // Hyper-parameters
         double eta = 0.01;
-        double beta = 0.9;
+        double beta1 = 0.9;
+        double beta2 = 0.999;
+        double epsilon = 10e-8;
 
         for (int k = 0; k < this.k; k++)
         {
             for (int j = 0; j <= this.j; j++)
             {
-                velocity2[k][j] = beta*velocity2[k][j] + (1-beta)*D_Wkj[k][j];
-                weights2[k][j] -= eta * velocity2[k][j];
+                M2[k][j] = beta1*M2[k][j] + (1-beta1)*D_Wkj[k][j];
+                R2[k][j] = beta2*R2[k][j] + (1-beta2)*Math.pow(D_Wkj[k][j], 2);
+                double M2_corrected = M2[k][j] / (1 - Math.pow(beta1, iteration));
+                double R2_corrected = R2[k][j] / (1 - Math.pow(beta2, iteration));
+                weights2[k][j] -= eta * (M2_corrected / (Math.sqrt(R2_corrected) + epsilon));
 
                 // weights2[k][j] -= eta * D_Wkj[k][j];
             }
@@ -138,8 +173,11 @@ class ANN
         {
             for (int i = 0; i <= this.i; i++)
             {
-                velocity1[j][i] = beta*velocity1[j][i] + (1-beta)*D_Wji[j][i];
-                weights1[j][i] -= eta * velocity1[j][i];
+                M1[j][i] = beta1*M1[j][i] + (1-beta1)*D_Wji[j][i];
+                R1[j][i] = beta2*R1[j][i] + (1-beta2)*Math.pow(D_Wji[j][i], 2);
+                double M1_corrected = M1[j][i] / (1 - Math.pow(beta1, iteration));
+                double R1_corrected = R1[j][i] / (1 - Math.pow(beta2, iteration));
+                weights1[j][i] -= eta * (M1_corrected / (Math.sqrt(R1_corrected) + epsilon));
 
                 // weights1[j][i] -= eta * D_Wji[j][i];
             }
@@ -279,7 +317,7 @@ class ANN
         return validation_error;
     }
 
-    void evaluateModel(ArrayList<Example> test_x)
+    double evaluateModel(ArrayList<Example> test_x)
     {
         Utility uObj = new Utility(); // Utility object
 
@@ -305,41 +343,28 @@ class ANN
                     p = k;
                     max_prob = y.get(k);
                 }
-                // int p = (int) Math.round(y.get(k));
-                // prediction.add(p);
             }
-            // System.out.println(p);
             En /= this.k;
             test_error += En;
 
-            // TODO: Makeshift evaluation
             if (p == xi.number)
                 correct++;
             else
                 incorrect++;
-            // if (prediction.get(0) == 0 && xi.target.get(0) == 0)
-            //     TP++;
-            // if (prediction.get(0) == 1 && xi.target.get(0) == 1)
-            //     TN++;
-            // if (prediction.get(0) == 0 && xi.target.get(0) == 1)
-            //     FN++;
-            // if (prediction.get(0) == 1 && xi.target.get(0) == 0)
-            //     FP++;
-
         }
         test_error /= test_x.size();
-        System.out.println("Test error: " + test_error);
-        System.out.println("Correct: " + correct);
-        System.out.println("Incorrect: " + incorrect);
+        double accuracy = (float)correct*100 / test_x.size();
 
-        // /* Print confusion matrix */
-        // uObj.computeConfusionMatrix(TP, FP, TN, FN);
-        //
-        // /* Compute precision */
-        // uObj.computePrecision(TP, FP, TN, FN);
-        //
-        // /* Compute recall */
-        // uObj.computeRecall(TP, FP, TN, FN);
+        if (verbose)
+        {
+            System.out.println("Test error: " + test_error);
+            System.out.println("Correct: " + correct);
+            System.out.println("Incorrect: " + incorrect);
+
+            System.out.printf("Percentage of correctly classifed samples: %.3f\n", accuracy);
+        }
+
+        return accuracy;
     }
 
     static double delta_sigmoid(double x)
@@ -355,7 +380,7 @@ class ANN
     public static void main(String[] args)
     {
         Utility uObj = new Utility(); // Utility object
-        ANN ann = new ANN();
+        boolean verbose = false;
 
         String train_data = "";
         String test_data = "";
@@ -370,7 +395,7 @@ class ANN
             try {
                 options = args[3];
                 if (options.equals("-v") || options.equals("--verbose"))
-                    ann.verbose = true;
+                    verbose = true;
                 if (options.equals("-h") || options.equals("--help"))
                 {
                     // showHelp(); TODO: Add help
@@ -397,8 +422,31 @@ class ANN
             System.exit(0);
         }
 
-        ann.train(x, 100, 3000, validation_x);
-        ann.evaluateModel(test_x);
+        int[] avg_iterations = new int[6];
+        double[] avg_accuracy = new double[6];
+
+        for (int trials = 0; trials < 10; trials++) // Take average over 10 trials
+        {
+            System.out.println("Trial " + (trials+1));
+            for (int hidden = 5; hidden <= 10; hidden++)
+            {
+                ANN ann = new ANN(hidden, verbose);
+                int num_iterations = ann.train(x, 100, 3000, validation_x);
+                double accuracy = ann.evaluateModel(test_x);
+                System.out.printf("%d hidden neurons, %d iterations, %.3f accuracy\n", hidden, num_iterations, accuracy);
+                avg_iterations[hidden-5] += num_iterations;
+                avg_accuracy[hidden-5] += accuracy;
+            }
+        }
+        System.out.println("----------------------------\nAverage statistics:");
+        for (int hidden = 5; hidden <= 10; hidden++)
+        {
+            avg_iterations[hidden-5] /= 10;
+            avg_accuracy[hidden-5] /= 10;
+            System.out.printf("%d hidden neurons, %d iterations, %.3f accuracy\n", hidden, avg_iterations[hidden-5], avg_accuracy[hidden-5]);
+        }
+
+
 
     }
 }
