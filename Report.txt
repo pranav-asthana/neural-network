@@ -1,0 +1,107 @@
+CS F441 
+SELECTED TOPICS FROM COMPUTER SCIENCE
+Assignment 2: Neural Network
+REPORT
+
+GROUP MEMBERS 
+
+Sahil Sangwan (2015A7PS0958H)
+Anushree Surendra Hede (2015A7PS0958H)
+Pranav Asthana (2015A7PS0958H)
+
+DATASET
+
+The dataset is "Optical Recognition of Handwritten Digits". Each row contains 65 values. First 64 are input attributes in range [0,1] the last value is class code from 0 to 9.
+The dataset is split into 3: train.txt (3100 instances), test.txt(1670 instances) and validation.txt(850 instances). The neural network training is done using train.txt, and the validation set is validation.txt. Accuracy of the network is tested using test.txt.
+
+RESULTS
+
+NOTE:
+* The accuracy of the network was calculated by taking the average accuracy over 10 trials.
+* In each trial, the number of hidden layer units was varied between 5-10 and the accuracy was calculated for each different size of the hidden layer. 
+* The number of training iterations for each hidden layer size and across trials - varies (max. 3000) because of the random initialization of the weight matrix. 
+
+-------------------------------------------------------------------------------------
+
+Trial 1
+5 hidden neurons, 37 iterations, 32.275 accuracy
+6 hidden neurons, 118 iterations, 77.425 accuracy
+7 hidden neurons, 41 iterations, 59.042 accuracy
+8 hidden neurons, 66 iterations, 68.024 accuracy
+9 hidden neurons, 65 iterations, 79.162 accuracy
+10 hidden neurons, 157 iterations, 92.156 accuracy
+Trial 2
+5 hidden neurons, 115 iterations, 62.455 accuracy
+6 hidden neurons, 98 iterations, 58.922 accuracy
+7 hidden neurons, 99 iterations, 82.934 accuracy
+8 hidden neurons, 170 iterations, 87.844 accuracy
+9 hidden neurons, 68 iterations, 71.737 accuracy
+10 hidden neurons, 165 iterations, 91.557 accuracy
+Trial 3
+5 hidden neurons, 71 iterations, 49.701 accuracy
+6 hidden neurons, 96 iterations, 66.228 accuracy
+7 hidden neurons, 38 iterations, 58.383 accuracy
+8 hidden neurons, 229 iterations, 92.695 accuracy
+9 hidden neurons, 81 iterations, 84.551 accuracy
+10 hidden neurons, 123 iterations, 89.102 accuracy
+Trial 4
+5 hidden neurons, 49 iterations, 36.168 accuracy
+6 hidden neurons, 176 iterations, 73.952 accuracy
+7 hidden neurons, 113 iterations, 84.012 accuracy
+8 hidden neurons, 115 iterations, 87.246 accuracy
+9 hidden neurons, 212 iterations, 91.737 accuracy
+10 hidden neurons, 48 iterations, 72.156 accuracy
+Trial 5
+5 hidden neurons, 67 iterations, 42.635 accuracy
+6 hidden neurons, 157 iterations, 65.629 accuracy
+7 hidden neurons, 140 iterations, 87.126 accuracy
+8 hidden neurons, 77 iterations, 83.653 accuracy
+9 hidden neurons, 138 iterations, 87.545 accuracy
+10 hidden neurons, 84 iterations, 88.323 accuracy
+Trial 6
+5 hidden neurons, 88 iterations, 56.287 accuracy
+6 hidden neurons, 139 iterations, 76.228 accuracy
+7 hidden neurons, 124 iterations, 86.228 accuracy
+8 hidden neurons, 108 iterations, 84.611 accuracy
+9 hidden neurons, 101 iterations, 88.563 accuracy
+10 hidden neurons, 86 iterations, 81.018 accuracy
+Trial 7
+5 hidden neurons, 159 iterations, 70.359 accuracy
+6 hidden neurons, 73 iterations, 62.874 accuracy
+7 hidden neurons, 75 iterations, 60.359 accuracy
+8 hidden neurons, 139 iterations, 81.377 accuracy
+9 hidden neurons, 198 iterations, 93.413 accuracy
+10 hidden neurons, 111 iterations, 88.922 accuracy
+Trial 8
+5 hidden neurons, 116 iterations, 63.353 accuracy
+6 hidden neurons, 90 iterations, 57.665 accuracy
+7 hidden neurons, 88 iterations, 71.257 accuracy
+8 hidden neurons, 127 iterations, 80.958 accuracy
+9 hidden neurons, 77 iterations, 78.204 accuracy
+10 hidden neurons, 100 iterations, 77.365 accuracy
+Trial 9
+5 hidden neurons, 72 iterations, 58.323 accuracy
+6 hidden neurons, 94 iterations, 77.186 accuracy
+7 hidden neurons, 64 iterations, 75.749 accuracy
+8 hidden neurons, 160 iterations, 88.802 accuracy
+9 hidden neurons, 174 iterations, 91.916 accuracy
+10 hidden neurons, 102 iterations, 89.162 accuracy
+Trial 10
+5 hidden neurons, 73 iterations, 61.557 accuracy
+6 hidden neurons, 119 iterations, 80.000 accuracy
+7 hidden neurons, 55 iterations, 62.635 accuracy
+8 hidden neurons, 144 iterations, 91.018 accuracy
+9 hidden neurons, 105 iterations, 86.766 accuracy
+10 hidden neurons, 136 iterations, 90.180 accuracy
+----------------------------
+Average statistics:
+5 hidden neurons, 84 iterations, 53.311 accuracy
+6 hidden neurons, 116 iterations, 69.611 accuracy
+7 hidden neurons, 83 iterations, 72.772 accuracy
+8 hidden neurons, 133 iterations, 84.623 accuracy
+9 hidden neurons, 121 iterations, 85.359 accuracy
+10 hidden neurons, 111 iterations, 85.994 accuracy
+
+CONCLUSION
+
+The neural network model is able to classify the test data with good accuracy (as described in the results). The accuracy increases as we increase the number of hidden layer units in the network.  
