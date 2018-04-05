@@ -1,13 +1,13 @@
-CS F441 
+CS F441
 SELECTED TOPICS FROM COMPUTER SCIENCE
 Assignment 2: Neural Network
 REPORT
 
-GROUP MEMBERS 
+GROUP MEMBERS
 
 Sahil Sangwan (2015A7PS0958H)
 Anushree Surendra Hede (2015A7PS0958H)
-Pranav Asthana (2015A7PS0958H)
+Pranav Kumar Asthana (2015A7PS0958H)
 
 DATASET
 
@@ -18,8 +18,8 @@ RESULTS
 
 NOTE:
 * The accuracy of the network was calculated by taking the average accuracy over 10 trials.
-* In each trial, the number of hidden layer units was varied between 5-10 and the accuracy was calculated for each different size of the hidden layer. 
-* The number of training iterations for each hidden layer size and across trials - varies (max. 3000) because of the random initialization of the weight matrix. 
+* In each trial, the number of hidden layer units was varied between 5-10 and the accuracy was calculated for each different size of the hidden layer.
+* The number of training iterations for each hidden layer size and across trials - varies (max. 3000) because of the random initialization of the weight matrix.
 
 -------------------------------------------------------------------------------------
 
@@ -104,4 +104,4 @@ Average statistics:
 
 CONCLUSION
 
-The neural network model is able to classify the test data with good accuracy (as described in the results). The accuracy increases as we increase the number of hidden layer units in the network.  
+The neural network model is able to classify the test data with good accuracy (as described in the results). The accuracy increases as we increase the number of hidden layer units in the network.
